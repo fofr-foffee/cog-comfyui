@@ -36,7 +36,7 @@ mounts = [
 
 
 @app.cls(
-    gpu="A10G",  # Default to A10G which is a great budget/performance option
+    gpu="A100",  # Using high-performance A100 GPU as requested
     timeout=1200,
     mounts=mounts,
     workdir="/root/comfyui",
@@ -110,7 +110,85 @@ class Model:
 @app.local_entrypoint()
 def main():
     """
-    Test running the ComfyUI workflow on Modal.
+    Load test cases from cog-safe-push-configs/default.yaml and run them on Modal.
     """
-    print("To run this on Modal:")
-    print("modal run modal_app.py")
+    import yaml
+    import sys
+    
+    config_path = Path("cog-safe-push-configs/default.yaml")
+    if not config_path.exists():
+        print(f"❌ Test config not found at {config_path}")
+        return
+
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    test_cases = config.get("predict", {}).get("test_cases", [])
+    if not test_cases:
+        print("⚠️ No test cases found in config.")
+        return
+
+    print(f"📦 Loaded {len(test_cases)} test cases from {config_path}")
+    print("🚀 Starting Modal test runner...")
+    
+    model = Model()
+    passed = 0
+    failed = 0
+
+    for idx, case in enumerate(test_cases):
+        inputs = case.get("inputs", {})
+        expected_error = case.get("error_contains")
+        
+        print("\n" + "="*80)
+        print(f"🧪 Test Case {idx + 1}/{len(test_cases)}")
+        print(f"   Inputs: {inputs}")
+        if expected_error:
+            print(f"   Expected Error: '{expected_error}'")
+        print("="*80)
+
+        try:
+            # We call the remote predict method
+            outputs = model.predict.remote(
+                workflow_json=inputs.get("workflow_json", ""),
+                input_file_url=inputs.get("input_file"),
+                return_temp_files=inputs.get("return_temp_files", False),
+                output_format=inputs.get("output_format", "webp"),
+                output_quality=inputs.get("output_quality", 95),
+                randomise_seeds=inputs.get("randomise_seeds", True),
+                force_reset_cache=inputs.get("force_reset_cache", False),
+            )
+            
+            if expected_error:
+                print(f"❌ Test Case {idx + 1} FAILED: Expected error containing '{expected_error}' but run succeeded.")
+                failed += 1
+            else:
+                print(f"✅ Test Case {idx + 1} PASSED! Received {len(outputs)} output file(s).")
+                for o_idx, out in enumerate(outputs):
+                    # Save a preview locally
+                    save_path = f"test_output_{idx+1}_{o_idx+1}.bin"
+                    with open(save_path, "wb") as sf:
+                        sf.write(out)
+                    print(f"   Saved output preview to {save_path}")
+                passed += 1
+
+        except Exception as e:
+            err_msg = str(e)
+            if expected_error:
+                if expected_error.lower() in err_msg.lower():
+                    print(f"✅ Test Case {idx + 1} PASSED! Failed as expected with: '{err_msg}'")
+                    passed += 1
+                else:
+                    print(f"❌ Test Case {idx + 1} FAILED: Run failed with unexpected error: '{err_msg}' (expected to contain '{expected_error}')")
+                    failed += 1
+            else:
+                print(f"❌ Test Case {idx + 1} FAILED with error: '{err_msg}'")
+                failed += 1
+
+    print("\n" + "#"*80)
+    print(f"📊 Test Execution Summary:")
+    print(f"   Passed: {passed}/{len(test_cases)}")
+    print(f"   Failed: {failed}/{len(test_cases)}")
+    print("#"*80)
+    
+    if failed > 0:
+        sys.exit(1)
