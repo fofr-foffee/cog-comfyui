@@ -20,6 +20,7 @@ image = (
     )
     .pip_install_from_requirements("requirements.txt")
     .pip_install("huggingface_hub[hf-transfer]", "modal")
+    .add_local_dir(".", remote_path="/root/comfyui", ignore=["venv", ".git"])
     .env({
         "HF_HUB_ENABLE_HF_TRANSFER": "1",
         "DOWNLOAD_LATEST_WEIGHTS_MANIFEST": "true",
@@ -29,16 +30,10 @@ image = (
 
 app = modal.App(name=app_name, image=image)
 
-# We mount our code into the container
-mounts = [
-    modal.Mount.from_local_dir(".", remote_path="/root/comfyui")
-]
-
 
 @app.cls(
     gpu="A100",  # Using high-performance A100 GPU as requested
     timeout=1200,
-    mounts=mounts,
     workdir="/root/comfyui",
 )
 class Model:
