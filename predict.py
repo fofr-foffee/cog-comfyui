@@ -5,7 +5,7 @@ import zipfile
 import mimetypes
 from PIL import Image
 from typing import List, Optional
-from cog import BasePredictor, Input, Path
+from pathlib import Path
 from comfyui import ComfyUI
 from weights_downloader import WeightsDownloader
 from cog_model_helpers import optimise_images
@@ -33,8 +33,8 @@ with open("examples/api_workflows/birefnet_api.json", "r") as file:
     EXAMPLE_WORKFLOW_JSON = file.read()
 
 
-class Predictor(BasePredictor):
-    def setup(self, weights: str):
+class Predictor:
+    def setup(self, weights: str = ""):
         if bool(weights):
             self.handle_user_weights(weights)
 
@@ -117,28 +117,13 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        workflow_json: str = Input(
-            description="Your ComfyUI workflow as JSON string or URL. You must use the API version of your workflow. Get it from ComfyUI using 'Save (API format)'. Instructions here: https://github.com/replicate/cog-comfyui",
-            default="",
-        ),
-        input_file: Optional[Path] = Input(
-            description="Input image, video, tar or zip file. Read guidance on workflows and input files here: https://github.com/replicate/cog-comfyui. Alternatively, you can replace inputs with URLs in your JSON workflow and the model will download them.",
-            default=None,
-        ),
-        return_temp_files: bool = Input(
-            description="Return any temporary files, such as preprocessed controlnet images. Useful for debugging.",
-            default=False,
-        ),
+        workflow_json: str = "",
+        input_file: Optional[Path] = None,
+        return_temp_files: bool = False,
         output_format: str = optimise_images.predict_output_format(),
         output_quality: int = optimise_images.predict_output_quality(),
-        randomise_seeds: bool = Input(
-            description="Automatically randomise seeds (seed, noise_seed, rand_seed)",
-            default=True,
-        ),
-        force_reset_cache: bool = Input(
-            description="Force reset the ComfyUI cache before running the workflow. Useful for debugging.",
-            default=False,
-        ),
+        randomise_seeds: bool = True,
+        force_reset_cache: bool = False,
     ) -> List[Path]:
         """Run a single prediction on the model"""
         self.comfyUI.cleanup(ALL_DIRECTORIES)

@@ -115,7 +115,7 @@ class WeightsManifest:
 
             weights_map = {
                 key: {
-                    "url": f"{BASE_URL}/{directory_name}/{key}.tar",
+                    "url": f"{BASE_URL}/{directory_name}/{key}",
                     "dest": dest_path,
                 }
                 for key in keys
@@ -125,7 +125,7 @@ class WeightsManifest:
             # ComfyUI-HunyuanVideoWrapper looks for it only in clip directory
             if directory_name.lower() == "clip" and "clip-vit-large-patch14" in keys:
                 weights_map["clip-vit-large-patch14"] = {
-                    "url": f"{BASE_URL}/clip/clip-vit-large-patch14.tar",
+                    "url": f"{BASE_URL}/clip/clip-vit-large-patch14",
                     "dest": f"{MODELS_PATH}/clip",
                 }
 

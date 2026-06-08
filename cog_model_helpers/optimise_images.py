@@ -1,4 +1,3 @@
-from cog import Input
 from PIL import Image
 
 IMAGE_FILE_EXTENSIONS = [".jpg", ".jpeg", ".png"]
@@ -8,20 +7,11 @@ DEFAULT_QUALITY = 95
 
 
 def predict_output_format() -> str:
-    return Input(
-        description="Format of the output images",
-        choices=FORMAT_CHOICES,
-        default=DEFAULT_FORMAT,
-    )
+    return DEFAULT_FORMAT
 
 
 def predict_output_quality() -> int:
-    return Input(
-        description="Quality of the output images, from 0 to 100. 100 is best quality, 0 is lowest quality.",
-        default=DEFAULT_QUALITY,
-        ge=0,
-        le=100,
-    )
+    return DEFAULT_QUALITY
 
 
 def should_optimise_images(output_format: str, output_quality: int):
