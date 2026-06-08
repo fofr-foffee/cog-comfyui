@@ -34,12 +34,13 @@ app = modal.App(name=app_name, image=image)
 @app.cls(
     gpu="A100",  # Using high-performance A100 GPU as requested
     timeout=1200,
-    workdir="/root/comfyui",
 )
 class Model:
     @modal.enter()
     def setup(self):
         print("🚀 Initializing ComfyUI Predictor...")
+        import os
+        os.chdir("/root/comfyui")
         from predict import Predictor
         self.predictor = Predictor()
         self.predictor.setup()
