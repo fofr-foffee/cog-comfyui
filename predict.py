@@ -80,6 +80,13 @@ with open("examples/api_workflows/birefnet_api.json", "r") as file:
 
 class Predictor:
     def setup(self, weights: str = ""):
+        # Dynamically patch any submodule files to make sure they are in the expected state before running
+        try:
+            import patch_submodules
+            patch_submodules.main()
+        except Exception as e:
+            print(f"⚠️ Error running dynamic submodules patcher: {e}")
+
         if bool(weights):
             self.handle_user_weights(weights)
 

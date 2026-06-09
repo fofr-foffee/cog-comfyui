@@ -174,6 +174,13 @@ def webui():
     from predict import ALL_DIRECTORIES
     for directory in ALL_DIRECTORIES:
         os.makedirs(directory, exist_ok=True)
+
+    # Dynamically patch submodules before starting standard ComfyUI server
+    try:
+        import patch_submodules
+        patch_submodules.main()
+    except Exception as e:
+        print(f"⚠️ Error running dynamic submodules patcher: {e}")
         
     print("🚀 Starting ComfyUI WebUI on port 8188...")
     # Start ComfyUI in the foreground or keep the function active
