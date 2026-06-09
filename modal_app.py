@@ -212,6 +212,9 @@ def main():
     passed = 0
     failed = 0
 
+    output_dir = Path("test_outputs")
+    output_dir.mkdir(exist_ok=True)
+
     for idx, case in enumerate(test_cases):
         inputs = case.get("inputs", {})
         expected_error = case.get("error_contains")
@@ -250,8 +253,17 @@ def main():
             else:
                 print(f"✅ Test Case {idx + 1} PASSED! Received {len(outputs)} output file(s).")
                 for o_idx, out in enumerate(outputs):
-                    # Save a preview locally
-                    save_path = f"test_output_{idx+1}_{o_idx+1}.bin"
+                    # Determine correct extension dynamically based on magic bytes or inputs
+                    if out.startswith(b"\x89PNG\r\n\x1a\n"):
+                        ext = "png"
+                    elif out.startswith(b"RIFF") and len(out) >= 12 and out[8:12] == b"WEBP":
+                        ext = "webp"
+                    elif out.startswith(b"\xff\xd8\xff"):
+                        ext = "jpg"
+                    else:
+                        ext = inputs.get("output_format", "webp")
+                    
+                    save_path = output_dir / f"test_output_{idx+1}_{o_idx+1}.{ext}"
                     with open(save_path, "wb") as sf:
                         sf.write(out)
                     print(f"   Saved output preview to {save_path}")
