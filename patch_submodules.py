@@ -1,43 +1,17 @@
 import os
 import sys
 
-def patch_file(filepath, target, replacement, description):
-    if not os.path.exists(filepath):
-        print(f"⚠️ Warning: File to patch not found at {filepath}")
-        return False
-    
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-        
-    if replacement in content:
-        print(f"✅ Patch already applied to {filepath} ({description})")
-        return True
-        
-    if target not in content:
-        print(f"❌ Error: Target signature not found in {filepath} ({description})")
-        return False
-        
-    print(f"⏳ Applying patch to {filepath} ({description})...")
-    patched_content = content.replace(target, replacement)
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(patched_content)
-    print(f"✅ Patch successfully applied to {filepath} ({description})")
-    return True
+# Define patch targets and replacements
+PATCHES = []
 
-def main():
-    print("🛠️ Running ComfyUI serverless submodule patcher...")
-    
-    # ----------------------------------------------------
-    # Patch 1: ComfyUI/server.py (Prompt Interceptor)
-    # ----------------------------------------------------
-    server_py = "ComfyUI/server.py"
-    target_server = """        @routes.post("/prompt")
+# --- Patch 1: ComfyUI/server.py (Prompt Interceptor) ---
+target_server = """        @routes.post("/prompt")
         async def post_prompt(request):
             logging.info("got prompt")
             json_data =  await request.json()
             json_data = self.trigger_on_prompt(json_data)"""
-            
-    replacement_server = """        @routes.post("/prompt")
+
+replacement_server = """        @routes.post("/prompt")
         async def post_prompt(request):
             logging.info("got prompt")
             json_data =  await request.json()
@@ -66,17 +40,19 @@ def main():
             # --------------------------------------------------------
 
             json_data = self.trigger_on_prompt(json_data)"""
-            
-    patch_file(server_py, target_server, replacement_server, "Prompt Downloader Interceptor")
 
-    # ----------------------------------------------------
-    # Patch 2: ComfyUI/main.py (Torch & Transformers Compatibility)
-    # ----------------------------------------------------
-    main_py = "ComfyUI/main.py"
-    target_main = """    if "rocm" in cuda_malloc.get_torch_version_noimport():
+PATCHES.append({
+    "filepath": "ComfyUI/server.py",
+    "description": "Prompt Downloader Interceptor",
+    "target": target_server,
+    "replacement": replacement_server
+})
+
+# --- Patch 2: ComfyUI/main.py (Torch & Transformers Compatibility) ---
+target_main = """    if "rocm" in cuda_malloc.get_torch_version_noimport():
         os.environ['OCL_SET_SVM_SIZE'] = '262144'  # set at the request of AMD"""
-        
-    replacement_main = """    if "rocm" in cuda_malloc.get_torch_version_noimport():
+
+replacement_main = """    if "rocm" in cuda_malloc.get_torch_version_noimport():
         os.environ['OCL_SET_SVM_SIZE'] = '262144'  # set at the request of AMD
 
     # --- CUSTOM PYTORCH & TRANSFORMERS MONKEY PATCHES ---
@@ -126,61 +102,81 @@ def main():
         import logging
         logging.warning(f"Failed to monkey-patch comfy.ops.pick_operations: {e}")
     # -----------------------------------------------------"""
-    
-    patch_file(main_py, target_main, replacement_main, "Torch & Transformers compatibility")
 
-    # ----------------------------------------------------
-    # Patch 3: ComfyUI-Kolors-MZ configuration_chatglm.py (use_cache parameter)
-    # ----------------------------------------------------
-    kolors_config_py = "ComfyUI/custom_nodes/ComfyUI-Kolors-MZ/chatglm3/configuration_chatglm.py"
-    target_kolors_sig = """        quantization_bit=0,
+PATCHES.append({
+    "filepath": "ComfyUI/main.py",
+    "description": "Torch & Transformers compatibility",
+    "target": target_main,
+    "replacement": replacement_main
+})
+
+# --- Patch 3.1: ComfyUI-Kolors-MZ configuration_chatglm.py (use_cache parameter) ---
+target_kolors_sig = """        quantization_bit=0,
         pre_seq_len=None,
         prefix_projection=False,
         **kwargs
     ):"""
-    replacement_kolors_sig = """        quantization_bit=0,
+
+replacement_kolors_sig = """        quantization_bit=0,
         pre_seq_len=None,
         prefix_projection=False,
         use_cache=True,
         **kwargs
     ):"""
-    patch_file(kolors_config_py, target_kolors_sig, replacement_kolors_sig, "Kolors signature patch")
-    
-    target_kolors_body = """        self.quantization_bit = quantization_bit
+
+PATCHES.append({
+    "filepath": "ComfyUI/custom_nodes/ComfyUI-Kolors-MZ/chatglm3/configuration_chatglm.py",
+    "description": "Kolors signature patch",
+    "target": target_kolors_sig,
+    "replacement": replacement_kolors_sig
+})
+
+# --- Patch 3.2: ComfyUI-Kolors-MZ configuration_chatglm.py (use_cache assignment) ---
+target_kolors_body = """        self.quantization_bit = quantization_bit
         self.pre_seq_len = pre_seq_len
         self.prefix_projection = prefix_projection
         super().__init__(**kwargs)"""
-    replacement_kolors_body = """        self.quantization_bit = quantization_bit
+
+replacement_kolors_body = """        self.quantization_bit = quantization_bit
         self.pre_seq_len = pre_seq_len
         self.prefix_projection = prefix_projection
         self.use_cache = use_cache
         super().__init__(**kwargs)"""
-    patch_file(kolors_config_py, target_kolors_body, replacement_kolors_body, "Kolors use_cache assignment")
 
-    # ----------------------------------------------------
-    # Patch 4: ComfyUI-ReActor nodes.py (ultralytics separation & restore_swapped_only)
-    # ----------------------------------------------------
-    reactor_py = "ComfyUI/custom_nodes/ComfyUI-ReActor/nodes.py"
-    target_reactor_ultralytics = """if "ultralytics" not in folder_paths.folder_names_and_paths:
+PATCHES.append({
+    "filepath": "ComfyUI/custom_nodes/ComfyUI-Kolors-MZ/chatglm3/configuration_chatglm.py",
+    "description": "Kolors use_cache assignment",
+    "target": target_kolors_body,
+    "replacement": replacement_kolors_body
+})
+
+# --- Patch 4.1: ComfyUI-ReActor nodes.py (ultralytics separation & restore_swapped_only) ---
+target_reactor_ultralytics = """if "ultralytics" not in folder_paths.folder_names_and_paths:
     add_folder_path_and_extensions("ultralytics_bbox", [os.path.join(models_dir, "ultralytics", "bbox")], folder_paths.supported_pt_extensions)"""
-    
-    replacement_reactor_ultralytics = """if "ultralytics_bbox" not in folder_paths.folder_names_and_paths:
+
+replacement_reactor_ultralytics = """if "ultralytics_bbox" not in folder_paths.folder_names_and_paths:
     add_folder_path_and_extensions("ultralytics_bbox", [os.path.join(models_dir, "ultralytics", "bbox")], folder_paths.supported_pt_extensions)
 if "ultralytics_segm" not in folder_paths.folder_names_and_paths:
     add_folder_path_and_extensions("ultralytics_segm", [os.path.join(models_dir, "ultralytics", "segm")], folder_paths.supported_pt_extensions)
 if "ultralytics" not in folder_paths.folder_names_and_paths:
     add_folder_path_and_extensions("ultralytics", [os.path.join(models_dir, "ultralytics")], folder_paths.supported_pt_extensions)"""
-    
-    patch_file(reactor_py, target_reactor_ultralytics, replacement_reactor_ultralytics, "ReActor Ultralytics folders separate registration")
 
-    target_reactor_options = """                "source_faces_index": ("STRING", {"default": "0"}),
+PATCHES.append({
+    "filepath": "ComfyUI/custom_nodes/ComfyUI-ReActor/nodes.py",
+    "description": "ReActor Ultralytics folders separate registration",
+    "target": target_reactor_ultralytics,
+    "replacement": replacement_reactor_ultralytics
+})
+
+# --- Patch 4.2: ComfyUI-ReActor restore_swapped_only optionality ---
+target_reactor_options = """                "source_faces_index": ("STRING", {"default": "0"}),
                 "detect_gender_source": (["no","female","male"], {"default": "no"}),
                 "console_log_level": ([0, 1, 2], {"default": 1}),
                 "restore_swapped_only": ("BOOLEAN", {"default": True, "label_off": "no", "label_on": "yes"})
             }
         }"""
-        
-    replacement_reactor_options = """                "source_faces_index": ("STRING", {"default": "0"}),
+
+replacement_reactor_options = """                "source_faces_index": ("STRING", {"default": "0"}),
                 "detect_gender_source": (["no","female","male"], {"default": "no"}),
                 "console_log_level": ([0, 1, 2], {"default": 1}),
             },
@@ -188,12 +184,77 @@ if "ultralytics" not in folder_paths.folder_names_and_paths:
                 "restore_swapped_only": ("BOOLEAN", {"default": True, "label_off": "no", "label_on": "yes"})
             }
         }"""
-        
-    patch_file(reactor_py, target_reactor_options, replacement_reactor_options, "ReActorOptions restore_swapped_only optionality")
 
-    target_reactor_exec = """    def execute(self,input_faces_order, input_faces_index, detect_gender_input, source_faces_order, source_faces_index, detect_gender_source, console_log_level, restore_swapped_only):"""
-    replacement_reactor_exec = """    def execute(self,input_faces_order, input_faces_index, detect_gender_input, source_faces_order, source_faces_index, detect_gender_source, console_log_level, restore_swapped_only=True):"""
-    patch_file(reactor_py, target_reactor_exec, replacement_reactor_exec, "ReActorOptions execute method parameter optionality")
+PATCHES.append({
+    "filepath": "ComfyUI/custom_nodes/ComfyUI-ReActor/nodes.py",
+    "description": "ReActorOptions restore_swapped_only optionality",
+    "target": target_reactor_options,
+    "replacement": replacement_reactor_options
+})
+
+# --- Patch 4.3: ComfyUI-ReActor execute method parameter optionality ---
+target_reactor_exec = """    def execute(self,input_faces_order, input_faces_index, detect_gender_input, source_faces_order, source_faces_index, detect_gender_source, console_log_level, restore_swapped_only):"""
+
+replacement_reactor_exec = """    def execute(self,input_faces_order, input_faces_index, detect_gender_input, source_faces_order, source_faces_index, detect_gender_source, console_log_level, restore_swapped_only=True):"""
+
+PATCHES.append({
+    "filepath": "ComfyUI/custom_nodes/ComfyUI-ReActor/nodes.py",
+    "description": "ReActorOptions execute method parameter optionality",
+    "target": target_reactor_exec,
+    "replacement": replacement_reactor_exec
+})
+
+
+def patch_file(filepath, target, replacement, description, raise_on_error=True):
+    if not os.path.exists(filepath):
+        msg = f"File to patch not found at {filepath} ({description})"
+        if raise_on_error:
+            raise FileNotFoundError(msg)
+        print(f"⚠️ Warning: {msg}")
+        return False
+    
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    if replacement in content:
+        print(f"✅ Patch already applied to {filepath} ({description})")
+        return True
+        
+    if target not in content:
+        msg = f"Target signature not found in {filepath} ({description})"
+        if raise_on_error:
+            raise ValueError(msg)
+        print(f"❌ Error: {msg}")
+        return False
+        
+    print(f"⏳ Applying patch to {filepath} ({description})...")
+    patched_content = content.replace(target, replacement)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(patched_content)
+    print(f"✅ Patch successfully applied to {filepath} ({description})")
+    return True
+
+
+def main(raise_on_error=True):
+    print("🛠️ Running ComfyUI serverless submodule patcher...")
+    success = True
+    for patch in PATCHES:
+        res = patch_file(
+            filepath=patch["filepath"],
+            target=patch["target"],
+            replacement=patch["replacement"],
+            description=patch["description"],
+            raise_on_error=raise_on_error
+        )
+        if not res:
+            success = False
+            
+    if not success and raise_on_error:
+        print("❌ Critical: Some patches failed to apply.")
+        sys.exit(1)
+    return success
+
 
 if __name__ == "__main__":
-    main()
+    # If run directly, we exit 1 on failure to guarantee visibility of errors in builds
+    main(raise_on_error=True)
