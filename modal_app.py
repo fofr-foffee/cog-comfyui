@@ -1,3 +1,51 @@
+try:
+    import torch
+    if not hasattr(torch, "float8_e8m0fnu"):
+        torch.float8_e8m0fnu = None
+except ImportError:
+    pass
+
+try:
+    import transformers
+    import transformers.modeling_utils
+    for cls in [transformers.PreTrainedModel, transformers.modeling_utils.ModuleUtilsMixin]:
+        if not hasattr(cls, "get_head_mask"):
+            def get_head_mask(self, head_mask, num_hidden_layers, is_attention_probs=False):
+                if head_mask is None:
+                    return [None] * num_hidden_layers
+                return head_mask
+            cls.get_head_mask = get_head_mask
+
+    if hasattr(transformers.modeling_utils.ModuleUtilsMixin, "get_extended_attention_mask"):
+        orig_get_extended_attention_mask = transformers.modeling_utils.ModuleUtilsMixin.get_extended_attention_mask
+        def tolerant_get_extended_attention_mask(self, attention_mask, input_shape, *args, **kwargs):
+            dtype = kwargs.get("dtype", None)
+            device = kwargs.get("device", None)
+            for arg in args:
+                if isinstance(arg, torch.device) or (isinstance(arg, str) and arg in ["cuda", "cpu"]):
+                    device = arg
+                elif isinstance(arg, torch.dtype):
+                    dtype = arg
+            extended_mask = orig_get_extended_attention_mask(self, attention_mask, input_shape, dtype=dtype)
+            if device is not None:
+                extended_mask = extended_mask.to(device=device)
+            return extended_mask
+        transformers.modeling_utils.ModuleUtilsMixin.get_extended_attention_mask = tolerant_get_extended_attention_mask
+except Exception as e:
+    pass
+
+try:
+    import comfy.ops
+    if hasattr(comfy.ops, "pick_operations"):
+        orig_pick_operations = comfy.ops.pick_operations
+        def tolerant_pick_operations(weight_dtype, compute_dtype, *args, **kwargs):
+            kwargs.pop("scaled_fp8", None)
+            return orig_pick_operations(weight_dtype, compute_dtype, *args, **kwargs)
+        comfy.ops.pick_operations = tolerant_pick_operations
+except Exception as e:
+    pass
+
+
 import os
 import modal
 from pathlib import Path
@@ -21,7 +69,7 @@ image = (
     .pip_install_from_requirements("requirements.txt")
     .pip_install("huggingface_hub[hf-transfer]", "modal")
     .env({
-        "HF_HUB_ENABLE_HF_TRANSFER": "1",
+        "HF_HUB_ENABLE_HF_TRANSFER": "0",
         "DOWNLOAD_LATEST_WEIGHTS_MANIFEST": "true",
         "YOLO_CONFIG_DIR": "/tmp/Ultralytics",
     })

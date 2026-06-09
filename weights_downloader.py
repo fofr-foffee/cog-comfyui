@@ -121,11 +121,11 @@ class WeightsDownloader:
             target_dir = dest if dest.endswith("buffalo_l") else os.path.join(dest, "buffalo_l")
             os.makedirs(target_dir, exist_ok=True)
             files = ["1k3d68.onnx", "2d106det.onnx", "det_10g.onnx", "genderage.onnx", "w600k_r50.onnx"]
-            print(f"⏳ Downloading buffalo_l directory from immich-app/buffalo_l to {target_dir}")
+            print(f"⏳ Downloading buffalo_l directory from lithiumice/insightface to {target_dir}")
             start = time.time()
             for f in files:
                 from huggingface_hub import hf_hub_download
-                downloaded = hf_hub_download(repo_id="immich-app/buffalo_l", filename=f)
+                downloaded = hf_hub_download(repo_id="lithiumice/insightface", filename=f"models/buffalo_l/{f}")
                 out_path = os.path.join(target_dir, f)
                 if os.path.exists(out_path):
                     os.remove(out_path)
@@ -134,6 +134,29 @@ class WeightsDownloader:
                 except OSError:
                     shutil.copy(downloaded, out_path)
             print(f"✅ buffalo_l ready at {target_dir} in {time.time() - start:.2f}s")
+            return
+
+
+        if base_weight_str == "vit-base-nsfw-detector":
+            target_dir = dest if dest.endswith("vit-base-nsfw-detector") else os.path.join(dest, "vit-base-nsfw-detector")
+            os.makedirs(target_dir, exist_ok=True)
+            files = ["config.json", "preprocessor_config.json", "model.safetensors", "pytorch_model.bin"]
+            print(f"⏳ Downloading vit-base-nsfw-detector directory from AdamCodd/vit-base-nsfw-detector to {target_dir}")
+            start = time.time()
+            for f in files:
+                from huggingface_hub import hf_hub_download
+                try:
+                    downloaded = hf_hub_download(repo_id="AdamCodd/vit-base-nsfw-detector", filename=f)
+                    out_path = os.path.join(target_dir, f)
+                    if os.path.exists(out_path):
+                        os.remove(out_path)
+                    try:
+                        os.symlink(downloaded, out_path)
+                    except OSError:
+                        shutil.copy(downloaded, out_path)
+                except Exception as e:
+                    print(f"Could not download {f} from AdamCodd/vit-base-nsfw-detector: {e}")
+            print(f"✅ vit-base-nsfw-detector ready at {target_dir} in {time.time() - start:.2f}s")
             return
 
         # PyTorch Hub or other direct URL models override
@@ -192,6 +215,19 @@ class WeightsDownloader:
             "General.safetensors": ("ZhengPeng7/BiRefNet", "model.safetensors"),
             # LTX-Video
             "ltx-video-2b-v0.9.1.safetensors": ("Lightricks/LTX-Video", "ltx-video-2b-v0.9.1.safetensors"),
+            # ChatGLM3
+            "chatglm3-8bit.safetensors": ("Kijai/ChatGLM3-safetensors", "chatglm3-8bit.safetensors"),
+            "chatglm3-4bit.safetensors": ("Kijai/ChatGLM3-safetensors", "chatglm3-4bit.safetensors"),
+            "chatglm3-fp16.safetensors": ("Kijai/ChatGLM3-safetensors", "chatglm3-fp16.safetensors"),
+            # Flux.1 & associated models
+            "flux1-dev.safetensors": ("Comfy-Org/flux1-dev", "flux1-dev.safetensors"),
+            "flux1-schnell.safetensors": ("black-forest-labs/FLUX.1-schnell", "flux1-schnell.safetensors"),
+            "flux1-dev-fp8.safetensors": ("Comfy-Org/flux1-dev", "flux1-dev-fp8.safetensors"),
+            "flux1-schnell-fp8.safetensors": ("Comfy-Org/flux1-schnell", "flux1-schnell-fp8.safetensors"),
+            "ae.safetensors": ("fofr/comfyui", "vae/ae.safetensors"),
+            "clip_l.safetensors": ("comfyanonymous/flux_text_encoders", "clip_l.safetensors"),
+            "t5xxl_fp16.safetensors": ("comfyanonymous/flux_text_encoders", "t5xxl_fp16.safetensors"),
+            "t5xxl_fp8_e4m3fn.safetensors": ("comfyanonymous/flux_text_encoders", "t5xxl_fp8_e4m3fn.safetensors"),
         }
 
         # Parse URL to extract Hugging Face repository and filename path
@@ -223,7 +259,7 @@ class WeightsDownloader:
 
         try:
             from huggingface_hub import hf_hub_download
-            os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+            os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
 
             downloaded_path = hf_hub_download(
                 repo_id=repo_id,

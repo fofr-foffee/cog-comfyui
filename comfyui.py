@@ -363,8 +363,16 @@ class ComfyUI:
 
         return sorted(files)
 
+    def free_gpu_memory(self):
+        print("Freeing GPU memory / unloading models from ComfyUI")
+        try:
+            self.post_request("/free", {"unload_models": True, "free_memory": True})
+        except Exception as e:
+            print(f"Failed to free GPU memory: {e}")
+
     def cleanup(self, directories):
         self.clear_queue()
+        self.free_gpu_memory()
         for directory in directories:
             if os.path.exists(directory):
                 shutil.rmtree(directory)

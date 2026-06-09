@@ -11,7 +11,7 @@ from cog import BaseModel, Input, Path, Secret
 from huggingface_hub import hf_hub_download
 
 os.environ["DOWNLOAD_LATEST_WEIGHTS_MANIFEST"] = "true"
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
 
 HF_TEMP_DIR = "TEMP_HF"
 USER_MODELS_DIR = "user_models"

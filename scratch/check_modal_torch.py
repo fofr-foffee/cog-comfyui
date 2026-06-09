@@ -21,6 +21,8 @@ def check_env():
         print(f"Device Name: {torch.cuda.get_device_name(0)}")
         print(f"Device Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
     print(f"Torchvision Version: {torchvision.__version__}")
+    print(f"Has float8_e8m0fnu: {hasattr(torch, 'float8_e8m0fnu')}")
+    print(f"All float8 dtypes in torch: {[x for x in dir(torch) if 'float8' in x]}")
     print("==================================================")
 
 @app.local_entrypoint()
