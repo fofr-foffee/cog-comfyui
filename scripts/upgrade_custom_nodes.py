@@ -38,8 +38,8 @@ def get_latest_commit(repo_path):
             return None
 
     try:
-        # Try main branch first, fall back to master
-        for branch in ["main", "master"]:
+        # Try main branch first, fall back to master or Main
+        for branch in ["main", "master", "Main"]:
             commit = try_branch(branch)
             if commit:
                 return commit
@@ -128,7 +128,11 @@ for repo in repos:
         compare_url = f"{repo_url}/compare/{current_commit[:7]}...{latest_commit[:7]}"
         print(f"Comparison URL: {compare_url}")
 
-        response = input("Do you want to update? (y/n): ")
+        import sys
+        if "--yes" in sys.argv or os.environ.get("AUTO_UPDATE", "") == "true":
+            response = "y"
+        else:
+            response = input("Do you want to update? (y/n): ")
         if response.lower() == "y":
             print(f"Updating {repo_name}...")
             subprocess.run(

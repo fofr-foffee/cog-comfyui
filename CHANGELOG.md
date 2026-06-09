@@ -1,3 +1,34 @@
+## 2026-06-09
+- [Updated ComfyUI-Impact-Pack](https://github.com/ltdrdata/ComfyUI-Impact-Pack/compare/2804f79...429d015)
+
+- [Updated ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes/compare/44fda83...fadde42)
+## 2026-06-08
+- [Updated ComfyUI-FlashVSR](https://github.com/1038lab/ComfyUI-FlashVSR/compare/545bdaf...8877fdd)
+- [Updated ComfyUI-WanVideoWrapper](https://github.com/kijai/ComfyUI-WanVideoWrapper/compare/8ce6916...088128b)
+- [Updated ComfyUI-RMBG](https://github.com/1038lab/ComfyUI-RMBG/compare/b28ce10...d740251)
+- [Updated ComfyUI-LTXVideo](https://github.com/Lightricks/ComfyUI-LTXVideo/compare/445e087...229437c)
+- [Updated ComfyUI-DepthAnythingV2](https://github.com/kijai/ComfyUI-DepthAnythingV2/compare/d505cbc...5531878)
+- [Updated Comfyui_TTP_Toolset](https://github.com/TTPlanetPig/Comfyui_TTP_Toolset/compare/08fb8b9...981ae40)
+- [Updated ComfyUI_Patches_ll](https://github.com/lldacing/ComfyUI_Patches_ll/compare/4a9ea6e...9792a59)
+- [Updated ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2/compare/00b6338...9ece3de)
+- [Updated comfyui-inpaint-nodes](https://github.com/Acly/comfyui-inpaint-nodes/compare/1e2543e...d4a318f)
+- [Updated ComfyUI-SUPIR](https://github.com/kijai/ComfyUI-SUPIR/compare/c5cb1ce...99d49e9)
+- [Updated rgthree-comfy](https://github.com/rgthree/rgthree-comfy/compare/2b9eb36...738105a)
+- [Updated ComfyUI-Frame-Interpolation](https://github.com/Fannovel16/ComfyUI-Frame-Interpolation/compare/a969c01...26545cc)
+- [Updated ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes/compare/6c996e1...44fda83)
+- [Updated ComfyUI-ReActor](https://github.com/Gourieff/ComfyUI-ReActor/compare/d93450b...6ad6b35)
+- [Updated ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/compare/f2838ed...609f3af)
+- [Updated ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale/compare/c48d60d...bebd569)
+- [Updated ComfyUI_tinyterraNodes](https://github.com/TinyTerra/ComfyUI_tinyterraNodes/compare/1a90e43...1541163)
+- [Updated efficiency-nodes-comfyui](https://github.com/jags111/efficiency-nodes-comfyui/compare/f0971b5...4579b7d)
+- [Updated ComfyUI-Advanced-ControlNet](https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet/compare/2bde95a...ba0795a)
+- [Updated ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/compare/8923bd8...4ee72c0)
+- [Updated ComfyUI-AnimateDiff-Evolved](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved/compare/90fb133...d8d163c)
+- [Updated comfyui-tooling-nodes](https://github.com/Acly/comfyui-tooling-nodes/compare/75c632d...d826750)
+- [Updated ComfyUI-Inspire-Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack/compare/9c875a7...d23db9a)
+- [Updated comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux/compare/12f3564...e8b689a)
+
+- [Update ComfyUI to latest](https://github.com/comfyanonymous/ComfyUI/compare/e525673...00b633f)
 ## 2025-11-03
 
 Add support for FlashVSR:

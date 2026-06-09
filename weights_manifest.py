@@ -39,26 +39,18 @@ class WeightsManifest:
             )
             start = time.time()
             try:
-                subprocess.check_call(
-                    [
-                        "pget",
-                        "--log-level",
-                        "warn",
-                        "-f",
-                        REMOTE_WEIGHTS_MANIFEST_URL,
-                        REMOTE_WEIGHTS_MANIFEST_PATH,
-                    ],
-                    close_fds=False,
-                    timeout=5,
+                import urllib.request
+                req = urllib.request.Request(
+                    REMOTE_WEIGHTS_MANIFEST_URL,
+                    headers={'User-Agent': 'Mozilla/5.0'}
                 )
+                with urllib.request.urlopen(req, timeout=5) as response, open(REMOTE_WEIGHTS_MANIFEST_PATH, 'wb') as out_file:
+                    out_file.write(response.read())
                 print(
                     f"Downloading {REMOTE_WEIGHTS_MANIFEST_URL} took: {(time.time() - start):.2f}s"
                 )
-            except subprocess.CalledProcessError:
-                print(f"Failed to download {REMOTE_WEIGHTS_MANIFEST_URL}")
-                pass
-            except subprocess.TimeoutExpired:
-                print(f"Download from {REMOTE_WEIGHTS_MANIFEST_URL} timed out")
+            except Exception as e:
+                print(f"Failed to download {REMOTE_WEIGHTS_MANIFEST_URL} via urllib: {e}")
                 pass
 
     def _merge_manifests(self):

@@ -76,13 +76,131 @@ class WeightsDownloader:
             dest = os.path.join(dest, subfolder)
             os.makedirs(dest, exist_ok=True)
 
+        base_weight_str = os.path.basename(weight_str)
+
+        # Custom directory-based model downloads from original HF repositories
+        if base_weight_str == "bert-base-uncased":
+            target_dir = dest if dest.endswith("bert-base-uncased") else os.path.join(dest, "bert-base-uncased")
+            os.makedirs(target_dir, exist_ok=True)
+            files = ["config.json", "model.safetensors", "tokenizer_config.json", "tokenizer.json", "vocab.txt"]
+            print(f"⏳ Downloading bert-base-uncased directory from google-bert/bert-base-uncased to {target_dir}")
+            start = time.time()
+            for f in files:
+                from huggingface_hub import hf_hub_download
+                downloaded = hf_hub_download(repo_id="google-bert/bert-base-uncased", filename=f)
+                out_path = os.path.join(target_dir, f)
+                if os.path.exists(out_path):
+                    os.remove(out_path)
+                try:
+                    os.symlink(downloaded, out_path)
+                except OSError:
+                    shutil.copy(downloaded, out_path)
+            print(f"✅ bert-base-uncased ready at {target_dir} in {time.time() - start:.2f}s")
+            return
+
+        if base_weight_str == "antelopev2":
+            target_dir = dest if dest.endswith("antelopev2") else os.path.join(dest, "antelopev2")
+            os.makedirs(target_dir, exist_ok=True)
+            files = ["1k3d68.onnx", "2d106det.onnx", "genderage.onnx", "glintr100.onnx", "scrfd_10g_bnkps.onnx"]
+            print(f"⏳ Downloading antelopev2 directory from DIAMONIK7777/antelopev2 to {target_dir}")
+            start = time.time()
+            for f in files:
+                from huggingface_hub import hf_hub_download
+                downloaded = hf_hub_download(repo_id="DIAMONIK7777/antelopev2", filename=f)
+                out_path = os.path.join(target_dir, f)
+                if os.path.exists(out_path):
+                    os.remove(out_path)
+                try:
+                    os.symlink(downloaded, out_path)
+                except OSError:
+                    shutil.copy(downloaded, out_path)
+            print(f"✅ antelopev2 ready at {target_dir} in {time.time() - start:.2f}s")
+            return
+
+        if base_weight_str == "buffalo_l":
+            target_dir = dest if dest.endswith("buffalo_l") else os.path.join(dest, "buffalo_l")
+            os.makedirs(target_dir, exist_ok=True)
+            files = ["1k3d68.onnx", "2d106det.onnx", "det_10g.onnx", "genderage.onnx", "w600k_r50.onnx"]
+            print(f"⏳ Downloading buffalo_l directory from immich-app/buffalo_l to {target_dir}")
+            start = time.time()
+            for f in files:
+                from huggingface_hub import hf_hub_download
+                downloaded = hf_hub_download(repo_id="immich-app/buffalo_l", filename=f)
+                out_path = os.path.join(target_dir, f)
+                if os.path.exists(out_path):
+                    os.remove(out_path)
+                try:
+                    os.symlink(downloaded, out_path)
+                except OSError:
+                    shutil.copy(downloaded, out_path)
+            print(f"✅ buffalo_l ready at {target_dir} in {time.time() - start:.2f}s")
+            return
+
+        # PyTorch Hub or other direct URL models override
+        DIRECT_URLS = {
+            "mobilenet_v2-b0353104.pth": "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
+            "vgg16-397923af.pth": "https://download.pytorch.org/models/vgg16-397923af.pth",
+            "swin_b-68c6b09e.pth": "https://download.pytorch.org/models/swin_b-68c6b09e.pth",
+            "fbcnn_color.pth": "https://github.com/jiaxi-jiang/FBCNN/releases/download/v1.0/fbcnn_color.pth",
+        }
+
+        if base_weight_str in DIRECT_URLS:
+            direct_url = DIRECT_URLS[base_weight_str]
+            target_path = os.path.join(dest, base_weight_str)
+            print(f"⏳ Downloading {base_weight_str} directly from {direct_url} to {target_path}")
+            start = time.time()
+            if os.path.exists(target_path):
+                if os.path.islink(target_path) or os.path.isfile(target_path):
+                    os.remove(target_path)
+                elif os.path.isdir(target_path):
+                    shutil.rmtree(target_path)
+            os.makedirs(dest, exist_ok=True)
+            try:
+                req = urllib.request.Request(
+                    direct_url,
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req) as response, open(target_path, 'wb') as out_file:
+                    shutil.copyfileobj(response, out_file)
+                print(f"✅ Successfully downloaded {direct_url} to {target_path} via urllib")
+            except Exception as e2:
+                raise RuntimeError(f"Direct download failed for {direct_url}. Urllib error: {e2}")
+
+            elapsed_time = time.time() - start
+            try:
+                file_size_bytes = os.path.getsize(target_path)
+                file_size_megabytes = file_size_bytes / (1024 * 1024)
+                print(
+                    f"✅ {weight_str} ready at {dest} in {elapsed_time:.2f}s, size: {file_size_megabytes:.2f}MB"
+                )
+            except FileNotFoundError:
+                print(f"✅ {weight_str} ready at {dest} in {elapsed_time:.2f}s")
+            return
+
+        # Optional redirection to official HF repo where possible
+        ORIGINAL_REPOS = {
+            # SD 1.5 & XL
+            "v1-5-pruned-emaonly.safetensors": ("runwayml/stable-diffusion-v1-5", "v1-5-pruned-emaonly.safetensors"),
+            "sd_xl_base_1.0.safetensors": ("stabilityai/stable-diffusion-xl-base-1.0", "sd_xl_base_1.0.safetensors"),
+            "sd_xl_refiner_1.0.safetensors": ("stabilityai/stable-diffusion-xl-refiner-1.0", "sd_xl_refiner_1.0.safetensors"),
+            # Depth Anything V2
+            "depth_anything_v2_vitl.safetensors": ("depth-anything/Depth-Anything-V2-Large", "depth_anything_v2_vitl.safetensors"),
+            "depth_anything_v2_vitb.safetensors": ("depth-anything/Depth-Anything-V2-Base", "depth_anything_v2_vitb.safetensors"),
+            "depth_anything_v2_vits.safetensors": ("depth-anything/Depth-Anything-V2-Small", "depth_anything_v2_vits.safetensors"),
+            # BiRefNet
+            "birefnet-general-epoch150.safetensors": ("ZhengPeng7/BiRefNet", "birefnet-general-epoch150.safetensors"),
+            "General.safetensors": ("ZhengPeng7/BiRefNet", "model.safetensors"),
+            # LTX-Video
+            "ltx-video-2b-v0.9.1.safetensors": ("Lightricks/LTX-Video", "ltx-video-2b-v0.9.1.safetensors"),
+        }
+
         # Parse URL to extract Hugging Face repository and filename path
         parsed_url = urlparse(url)
         path_parts = parsed_url.path.strip("/").split("/")
 
-        # HuggingFace URL structure: /<org>/<repo>/resolve/<branch>/<file_path>
-        # e.g., /fofr/comfyui/resolve/main/checkpoints/512-inpainting-ema.safetensors
-        if "huggingface.co" in parsed_url.netloc and len(path_parts) >= 5 and path_parts[2] == "resolve":
+        if base_weight_str in ORIGINAL_REPOS:
+            repo_id, filename = ORIGINAL_REPOS[base_weight_str]
+        elif "huggingface.co" in parsed_url.netloc and len(path_parts) >= 5 and path_parts[2] == "resolve":
             repo_id = f"{path_parts[0]}/{path_parts[1]}"
             filename = "/".join(path_parts[4:])
         else:
@@ -98,6 +216,7 @@ class WeightsDownloader:
         # Final destination path
         target_file_name = os.path.basename(filename)
         target_path = os.path.join(dest, target_file_name)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
         print(f"⏳ Downloading {filename} from Hugging Face ({repo_id}) to {target_path}")
         start = time.time()

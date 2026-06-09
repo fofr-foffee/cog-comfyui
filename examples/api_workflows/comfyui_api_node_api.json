@@ -7,7 +7,7 @@
       "magic_prompt_option": "AUTO",
       "seed": 663434087,
       "num_images": 1,
-      "rendering_speed": "BALANCED"
+      "rendering_speed": "DEFAULT"
     },
     "class_type": "IdeogramV3",
     "_meta": {

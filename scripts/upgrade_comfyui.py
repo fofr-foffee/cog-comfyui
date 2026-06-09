@@ -129,7 +129,11 @@ if latest_commit[:7] != current_commit[:7]:
     compare_url = f"https://github.com/comfyanonymous/ComfyUI/compare/{current_commit[:7]}...{latest_commit[:7]}"
     print(f"Comparison URL: {compare_url}")
 
-    response = input("Do you want to update? (y/n): ")
+    import sys
+    if "--yes" in sys.argv or os.environ.get("AUTO_UPDATE", "") == "true":
+        response = "y"
+    else:
+        response = input("Do you want to update? (y/n): ")
     if response.lower() == "y":
         print("Updating ComfyUI...")
         subprocess.run(["git", "checkout", latest_commit], cwd=comfy_dir, check=True)

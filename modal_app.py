@@ -20,12 +20,12 @@ image = (
     )
     .pip_install_from_requirements("requirements.txt")
     .pip_install("huggingface_hub[hf-transfer]", "modal")
-    .add_local_dir(".", remote_path="/root/comfyui", ignore=["venv", ".git"])
     .env({
         "HF_HUB_ENABLE_HF_TRANSFER": "1",
         "DOWNLOAD_LATEST_WEIGHTS_MANIFEST": "true",
         "YOLO_CONFIG_DIR": "/tmp/Ultralytics",
     })
+    .add_local_dir(".", remote_path="/root/comfyui", ignore=["venv", ".git"])
 )
 
 app = modal.App(name=app_name, image=image)
@@ -40,6 +40,9 @@ class Model:
     def setup(self):
         print("🚀 Initializing ComfyUI Predictor...")
         import os
+        import sys
+        if "/root/comfyui" not in sys.path:
+            sys.path.insert(0, "/root/comfyui")
         os.chdir("/root/comfyui")
         from predict import Predictor
         self.predictor = Predictor()
@@ -103,6 +106,36 @@ class Model:
         return output_files
 
 
+@app.function(
+    gpu="A100",
+    timeout=3600,
+)
+@modal.web_server(8188, startup_timeout=180)
+def webui():
+    """
+    Launch the ComfyUI WebUI server on Modal.
+    Exposes ComfyUI on port 8188 and prints the public URL.
+    """
+    import subprocess
+    import os
+    import sys
+    
+    if "/root/comfyui" not in sys.path:
+        sys.path.insert(0, "/root/comfyui")
+    os.chdir("/root/comfyui")
+    from predict import ALL_DIRECTORIES
+    for directory in ALL_DIRECTORIES:
+        os.makedirs(directory, exist_ok=True)
+        
+    print("🚀 Starting ComfyUI WebUI on port 8188...")
+    # Start ComfyUI in the foreground or keep the function active
+    # Using Popen is fine as long as Modal waits for the web port 8188 to open
+    subprocess.Popen(
+        "python ./ComfyUI/main.py --output-directory /tmp/outputs --input-directory /tmp/inputs --disable-metadata --listen 0.0.0.0 --port 8188",
+        shell=True
+    )
+
+
 @app.local_entrypoint()
 def main():
     """
@@ -143,9 +176,18 @@ def main():
         print("="*80)
 
         try:
+            workflow_json_val = inputs.get("workflow_json", "")
+            if "raw.githubusercontent.com/replicate/cog-comfyui" in workflow_json_val:
+                filename = workflow_json_val.split("/")[-1]
+                local_path = Path("examples/api_workflows") / filename
+                if local_path.exists():
+                    print(f"📂 Intercepted remote URL. Loading local workflow file: {local_path}")
+                    with open(local_path, "r") as lf:
+                        workflow_json_val = lf.read()
+
             # We call the remote predict method
             outputs = model.predict.remote(
-                workflow_json=inputs.get("workflow_json", ""),
+                workflow_json=workflow_json_val,
                 input_file_url=inputs.get("input_file"),
                 return_temp_files=inputs.get("return_temp_files", False),
                 output_format=inputs.get("output_format", "webp"),

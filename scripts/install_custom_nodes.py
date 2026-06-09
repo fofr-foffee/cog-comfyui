@@ -50,9 +50,13 @@ for repo in repos:
         print(f"Custom node installed for {repo_name} at {current_commit[:7]}")
 
         if current_commit[:7] != commit_hash[:7]:
-            response = input(
-                f"Do you want to update {repo_name}? Current ({current_commit[:7]}) is different from ({commit_hash[:7]}) (y/n): "
-            )
+            import sys
+            if "--yes" in sys.argv or os.environ.get("AUTO_UPDATE", "") == "true":
+                response = "y"
+            else:
+                response = input(
+                    f"Do you want to update {repo_name}? Current ({current_commit[:7]}) is different from ({commit_hash[:7]}) (y/n): "
+                )
             if response.lower() == "y":
                 print(f"Checking out to commit {commit_hash}")
                 subprocess.run(["git", "fetch", "-q"])
